@@ -17,11 +17,7 @@ import {
   withPaginationContainer,
 } from "coral-framework/lib/relay";
 import { withRouteConfig } from "coral-framework/lib/router";
-import {
-  GQLCOMMENT_SORT,
-  GQLCOMMENT_SORT_RL,
-  GQLMODERATION_QUEUE,
-} from "coral-framework/schema";
+import { GQLCOMMENT_SORT, GQLMODERATION_QUEUE } from "coral-framework/schema";
 import { Spinner } from "coral-ui/components/v2";
 
 import { QueueRoute_queue } from "coral-admin/__generated__/QueueRoute_queue.graphql";
@@ -79,9 +75,8 @@ export const QueueRoute: FunctionComponent<Props> = ({
     | QueueRoutePaginationPendingQueryVariables
     | QueueRoutePaginationReportedQueryVariables
     | QueueRoutePaginationUnmoderatedQueryVariables
-  >(relay, {
-    orderBy: moderationQueueSort as GQLCOMMENT_SORT_RL,
-    count: 5,
+  >(relay, 5, {
+    orderBy: moderationQueueSort,
   });
 
   const orderBy = moderationQueueSort as GQLCOMMENT_SORT;
@@ -183,7 +178,6 @@ const createQueueRoute = (
       return {
         ...params,
         initialOrderBy,
-        count: 5,
       };
     },
     query: queueQuery,
@@ -237,7 +231,7 @@ const createQueueRoute = (
         queue: graphql`
           fragment QueueRoute_queue on ModerationQueue
             @argumentDefinitions(
-              count: { type: "Int!" }
+              count: { type: "Int", defaultValue: 5 }
               cursor: { type: "Cursor" }
               orderBy: { type: "COMMENT_SORT", defaultValue: CREATED_AT_DESC }
             ) {
@@ -272,16 +266,8 @@ const createQueueRoute = (
         `,
       },
       {
-        direction: "forward",
         getConnectionFromProps(props) {
           return props.queue && props.queue.comments;
-        },
-        // This is also the default implementation of `getFragmentVariables` if it isn't provided.
-        getFragmentVariables(prevVars, totalCount) {
-          return {
-            ...prevVars,
-            count: totalCount,
-          };
         },
         getVariables(props, { count, cursor }, fragmentVariables) {
           return {
@@ -304,14 +290,12 @@ export const PendingQueueRoute = createQueueRoute(
     query QueueRoutePendingQuery(
       $storyID: ID
       $siteID: ID
-      $count: Int!
       $section: SectionFilter
       $initialOrderBy: COMMENT_SORT
     ) {
       moderationQueues(storyID: $storyID, siteID: $siteID, section: $section) {
         pending {
-          ...QueueRoute_queue
-            @arguments(count: $count, orderBy: $initialOrderBy)
+          ...QueueRoute_queue @arguments(orderBy: $initialOrderBy)
         }
       }
       settings {
@@ -356,13 +340,11 @@ export const ReportedQueueRoute = createQueueRoute(
       $storyID: ID
       $siteID: ID
       $section: SectionFilter
-      $count: Int!
       $initialOrderBy: COMMENT_SORT
     ) {
       moderationQueues(storyID: $storyID, siteID: $siteID, section: $section) {
         reported {
-          ...QueueRoute_queue
-            @arguments(count: $count, orderBy: $initialOrderBy)
+          ...QueueRoute_queue @arguments(orderBy: $initialOrderBy)
         }
       }
       settings {
@@ -406,14 +388,12 @@ export const UnmoderatedQueueRoute = createQueueRoute(
     query QueueRouteUnmoderatedQuery(
       $storyID: ID
       $siteID: ID
-      $count: Int!
       $section: SectionFilter
       $initialOrderBy: COMMENT_SORT
     ) {
       moderationQueues(storyID: $storyID, siteID: $siteID, section: $section) {
         unmoderated {
-          ...QueueRoute_queue
-            @arguments(count: $count, orderBy: $initialOrderBy)
+          ...QueueRoute_queue @arguments(orderBy: $initialOrderBy)
         }
       }
       settings {
